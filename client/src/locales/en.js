@@ -6,6 +6,7 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -105,6 +106,8 @@ export default {
   orders: {
     title: 'Orders',
     description: 'View and manage customer orders',
+    customerOrders: 'Customer Orders',
+    purchaseOrders: 'Purchase Orders',
     allOrders: 'All Orders',
     totalOrders: 'Total Orders',
     totalRevenue: 'Total Revenue',
@@ -125,7 +128,12 @@ export default {
       totalValue: 'Total Value',
       status: 'Status',
       expectedDelivery: 'Expected Delivery',
-      actualDelivery: 'Actual Delivery'
+      actualDelivery: 'Actual Delivery',
+      poNumber: 'PO Number',
+      supplier: 'Supplier',
+      quantity: 'Quantity',
+      unitCost: 'Unit Cost',
+      createdDate: 'Created Date'
     }
   },
 
@@ -311,6 +319,79 @@ export default {
     selectLanguage: 'Select Language'
   },
 
+  // Restocking
+  restocking: {
+    title: 'Budget-Based Restocking',
+    description: 'Optimize inventory restocking within budget constraints using intelligent recommendations',
+    budgetPlanning: 'Budget Planning',
+    totalBudget: 'Total Budget',
+    enterBudget: 'Enter budget amount',
+    calculate: 'Calculate Recommendations',
+    calculating: 'Calculating',
+    calculatingRecommendations: 'Analyzing inventory and calculating optimal recommendations...',
+    recommendations: 'Recommended Restocking Items',
+    allocated: 'Allocated',
+    remaining: 'Remaining',
+    noItemsNeeded: 'All Items Well Stocked',
+    allItemsStocked: 'All inventory items are currently above their reorder points. No restocking needed at this time.',
+    partial: 'Partial',
+    approvalSummary: 'Approval Summary',
+    itemsToOrder: 'Items to Order',
+    totalCost: 'Total Cost',
+    approve: 'Approve & Create Purchase Orders',
+    approving: 'Creating Orders',
+    removeItem: 'Remove item',
+    table: {
+      item: 'Item',
+      currentStock: 'Current Stock',
+      recommended: 'Recommended',
+      allocated: 'Allocated',
+      cost: 'Cost',
+      priority: 'Priority',
+      actions: 'Actions'
+    },
+    trends: {
+      increasing: 'Rising',
+      stable: 'Stable',
+      decreasing: 'Falling'
+    },
+    priority: {
+      high: 'High',
+      medium: 'Medium',
+      low: 'Low'
+    },
+    errors: {
+      negativeBudget: 'Budget cannot be negative',
+      zeroBudget: 'Budget must be greater than zero',
+      invalidBudget: 'Please enter a valid budget amount',
+      calculationFailed: 'Failed to calculate recommendations. Please try again.',
+      approvalFailed: 'Failed to create purchase orders. Please try again.'
+    },
+    success: {
+      title: 'Restocking Orders Created Successfully',
+      message: '{count} purchase orders have been created',
+      totalCost: 'Total Investment',
+      ordersCreated: 'Purchase Orders Created',
+      expectedDelivery: 'Expected Delivery',
+      nextSteps: 'Next Steps',
+      step1: 'Monitor purchase order status in the Orders section',
+      step2: 'Track delivery schedules and update inventory upon receipt',
+      step3: 'Review restocking effectiveness and adjust reorder points if needed',
+      viewOrders: 'View Orders'
+    }
+  },
+
+  // Purchase Order
+  purchaseOrder: {
+    status: {
+      pending: 'Pending',
+      confirmed: 'Confirmed',
+      shipped: 'Shipped',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled'
+    }
+  },
+
   // Common
   common: {
     loading: 'Loading...',
@@ -323,6 +404,8 @@ export default {
     search: 'Search',
     filter: 'Filter',
     export: 'Export',
-    items: 'items'
+    items: 'items',
+    units: 'units',
+    dismiss: 'Dismiss'
   }
 }

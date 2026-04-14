@@ -304,6 +304,267 @@ def get_monthly_trends():
     result.sort(key=lambda x: x['month'])
     return result
 
+# Restocking Models
+class RestockingRequest(BaseModel):
+    budget: float
+    warehouse: Optional[str] = None
+    category: Optional[str] = None
+
+class RestockingRecommendation(BaseModel):
+    item_id: str
+    sku: str
+    name: str
+    current_stock: int
+    reorder_point: int
+    recommended_quantity: int
+    allocated_quantity: int
+    unit_cost: float
+    total_cost: float
+    priority_score: float
+    demand_trend: Optional[str] = None
+    backlog_priority: Optional[str] = None
+    is_partial: bool = False
+
+class RestockingSummary(BaseModel):
+    total_budget: float
+    budget_allocated: float
+    budget_remaining: float
+    items_recommended: int
+    items_covered: int
+    recommendations: List[RestockingRecommendation]
+
+def find_matching_demand_forecast(inventory_item, demand_forecasts):
+    """Find matching demand forecast using fuzzy matching"""
+    # Strategy 1: Exact SKU match
+    match = next((d for d in demand_forecasts if d.get('item_sku') == inventory_item.get('sku')), None)
+    if match:
+        return match
+
+    # Strategy 2: Name similarity matching
+    item_name_words = inventory_item.get('name', '').lower().split()
+    for forecast in demand_forecasts:
+        forecast_name_words = forecast.get('item_name', '').lower().split()
+        common_words = [word for word in item_name_words
+                       if any(fw for fw in forecast_name_words if word in fw or fw in word)]
+        if len(common_words) >= 2:
+            return forecast
+
+    return None
+
+def find_matching_backlog_item(inventory_item, backlog_items):
+    """Find matching backlog item using fuzzy matching"""
+    # Strategy 1: Exact SKU match
+    match = next((b for b in backlog_items if b.get('item_sku') == inventory_item.get('sku')), None)
+    if match:
+        return match
+
+    # Strategy 2: Name similarity matching
+    item_name_words = inventory_item.get('name', '').lower().split()
+    for backlog in backlog_items:
+        backlog_name_words = backlog.get('item_name', '').lower().split()
+        common_words = [word for word in item_name_words
+                       if any(bw for bw in backlog_name_words if word in bw or bw in word)]
+        if len(common_words) >= 2:
+            return backlog
+
+    return None
+
+def calculate_priority_score(item, demand_forecasts, backlog_items):
+    """Calculate priority score for restocking item (0-100 points)"""
+    score = 0
+
+    # Factor 1: Stock level severity (0-40 points)
+    if item.get('reorder_point', 0) > 0:
+        stock_ratio = item.get('quantity_on_hand', 0) / item.get('reorder_point', 1)
+        score += max(0, (1 - stock_ratio) * 40)
+
+    # Factor 2: Demand trend (0-30 points)
+    demand_forecast = find_matching_demand_forecast(item, demand_forecasts)
+    if demand_forecast:
+        trend = demand_forecast.get('trend', 'stable')
+        if trend == 'increasing':
+            score += 30
+        elif trend == 'stable':
+            score += 15
+        # decreasing gets 0 points
+
+    # Factor 3: Backlog urgency (0-30 points)
+    backlog_item = find_matching_backlog_item(item, backlog_items)
+    if backlog_item:
+        priority = backlog_item.get('priority', 'low')
+        if priority == 'high':
+            score += 30
+        elif priority == 'medium':
+            score += 20
+        elif priority == 'low':
+            score += 10
+
+    return score
+
+def calculate_recommended_quantity(item, demand_forecasts):
+    """Calculate recommended restock quantity based on reorder point and demand"""
+    reorder_point = item.get('reorder_point', 0)
+    current_stock = item.get('quantity_on_hand', 0)
+
+    # Base restock amount to reach reorder point + safety stock
+    base_restock = max(0, reorder_point - current_stock)
+    safety_stock = int(reorder_point * 0.5)  # 50% of reorder point as safety stock
+
+    # Adjust based on demand forecast
+    demand_forecast = find_matching_demand_forecast(item, demand_forecasts)
+    if demand_forecast:
+        current_demand = demand_forecast.get('current_demand', 0)
+        forecasted_demand = demand_forecast.get('forecasted_demand', 0)
+        if forecasted_demand > current_demand:
+            # Increase restock for growing demand
+            demand_factor = (forecasted_demand / max(current_demand, 1)) - 1
+            safety_stock = int(safety_stock * (1 + demand_factor))
+
+    return base_restock + safety_stock
+
+@app.post("/api/restocking/calculate", response_model=RestockingSummary)
+def calculate_restocking(request: RestockingRequest):
+    """Calculate budget-based restocking recommendations"""
+
+    # Filter inventory by warehouse/category if specified
+    filtered_inventory = apply_filters(inventory_items, request.warehouse, request.category)
+
+    # Get items that need restocking (below reorder point)
+    low_stock_items = [item for item in filtered_inventory
+                      if item.get("quantity_on_hand", 0) <= item.get("reorder_point", 0)]
+
+    if not low_stock_items:
+        return RestockingSummary(
+            total_budget=request.budget,
+            budget_allocated=0,
+            budget_remaining=request.budget,
+            items_recommended=0,
+            items_covered=0,
+            recommendations=[]
+        )
+
+    # Calculate priority scores and recommended quantities
+    prioritized_items = []
+    for item in low_stock_items:
+        priority_score = calculate_priority_score(item, demand_forecasts, backlog_items)
+        recommended_quantity = calculate_recommended_quantity(item, demand_forecasts)
+        total_cost = recommended_quantity * item.get('unit_cost', 0)
+
+        # Get additional context
+        demand_forecast = find_matching_demand_forecast(item, demand_forecasts)
+        backlog_item = find_matching_backlog_item(item, backlog_items)
+
+        prioritized_items.append({
+            "item": item,
+            "priority_score": priority_score,
+            "recommended_quantity": recommended_quantity,
+            "total_cost": total_cost,
+            "demand_trend": demand_forecast.get('trend') if demand_forecast else None,
+            "backlog_priority": backlog_item.get('priority') if backlog_item else None
+        })
+
+    # Sort by priority score (highest first)
+    prioritized_items.sort(key=lambda x: x["priority_score"], reverse=True)
+
+    # Allocate budget in priority order
+    recommendations = []
+    remaining_budget = request.budget
+
+    for item_data in prioritized_items:
+        item = item_data["item"]
+        total_cost = item_data["total_cost"]
+
+        if remaining_budget >= total_cost:
+            # Full allocation
+            recommendations.append(RestockingRecommendation(
+                item_id=item["id"],
+                sku=item["sku"],
+                name=item["name"],
+                current_stock=item["quantity_on_hand"],
+                reorder_point=item["reorder_point"],
+                recommended_quantity=item_data["recommended_quantity"],
+                allocated_quantity=item_data["recommended_quantity"],
+                unit_cost=item["unit_cost"],
+                total_cost=total_cost,
+                priority_score=item_data["priority_score"],
+                demand_trend=item_data["demand_trend"],
+                backlog_priority=item_data["backlog_priority"],
+                is_partial=False
+            ))
+            remaining_budget -= total_cost
+        else:
+            # Partial allocation if budget allows at least 1 unit
+            unit_cost = item.get('unit_cost', 0)
+            if unit_cost > 0 and remaining_budget >= unit_cost:
+                partial_quantity = int(remaining_budget // unit_cost)
+                partial_cost = partial_quantity * unit_cost
+
+                recommendations.append(RestockingRecommendation(
+                    item_id=item["id"],
+                    sku=item["sku"],
+                    name=item["name"],
+                    current_stock=item["quantity_on_hand"],
+                    reorder_point=item["reorder_point"],
+                    recommended_quantity=item_data["recommended_quantity"],
+                    allocated_quantity=partial_quantity,
+                    unit_cost=unit_cost,
+                    total_cost=partial_cost,
+                    priority_score=item_data["priority_score"],
+                    demand_trend=item_data["demand_trend"],
+                    backlog_priority=item_data["backlog_priority"],
+                    is_partial=True
+                ))
+                remaining_budget = 0
+                break
+
+    budget_allocated = request.budget - remaining_budget
+
+    return RestockingSummary(
+        total_budget=request.budget,
+        budget_allocated=budget_allocated,
+        budget_remaining=remaining_budget,
+        items_recommended=len(prioritized_items),
+        items_covered=len(recommendations),
+        recommendations=recommendations
+    )
+
+@app.get("/api/purchase-orders")
+def get_purchase_orders():
+    """Get all purchase orders"""
+    return purchase_orders
+
+@app.post("/api/restocking/approve")
+def approve_restocking(recommendations: List[RestockingRecommendation]):
+    """Approve and process restocking recommendations by creating purchase orders"""
+    from datetime import datetime, timedelta
+
+    created_orders = []
+    for rec in recommendations:
+        # Create purchase order
+        po = {
+            "id": f"PO-{datetime.now().strftime('%Y%m%d%H%M%S')}-{rec.item_id}",
+            "backlog_item_id": "",  # Not directly linked to backlog
+            "supplier_name": "Auto-Generated Restock",
+            "quantity": rec.allocated_quantity,
+            "unit_cost": rec.unit_cost,
+            "expected_delivery_date": (datetime.now() + timedelta(days=7)).isoformat(),
+            "status": "pending",
+            "created_date": datetime.now().isoformat(),
+            "notes": f"Budget-based restock for {rec.sku} (Priority: {rec.priority_score:.1f})"
+        }
+
+        created_orders.append(po)
+        # In a real implementation, save to database
+        # For mock data, append to the purchase_orders list
+        purchase_orders.append(po)
+
+    return {
+        "message": f"Successfully created {len(created_orders)} purchase orders",
+        "orders": created_orders,
+        "total_items": len(recommendations),
+        "status": "success"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Inventory Management - Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8fafc;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e293b;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+
+        h2 {
+            color: #1e293b;
+            margin: 30px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3b82f6;
+        }
+
+        h3 {
+            color: #475569;
+            margin: 20px 0 10px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .overview h2 {
+            border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tech-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .architecture-diagram {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        .diagram-container {
+            min-width: 800px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .layer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .component {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 0 15px;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .component:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .frontend { border-color: #10b981; background: #f0fdf4; }
+        .backend { border-color: #3b82f6; background: #eff6ff; }
+        .data { border-color: #f59e0b; background: #fffbeb; }
+
+        .arrow {
+            position: absolute;
+            width: 2px;
+            background: #6b7280;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: -4px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 8px solid #6b7280;
+        }
+
+        .data-flow {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .flow-arrow {
+            margin: 0 15px;
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .file-tree {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .file-tree .folder {
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .file-tree .file {
+            color: #10b981;
+        }
+
+        .file-tree .important {
+            color: #f472b6;
+            font-weight: bold;
+        }
+
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .api-table th {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .api-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .api-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .method {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .method.get { background: #10b981; }
+        .method.post { background: #f59e0b; }
+
+        .filter-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .filter-box {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .filter-box.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+
+        .stat .label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .diagram-container {
+                min-width: 600px;
+            }
+
+            .component {
+                min-width: 100px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        .interactive {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .interactive:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏭 Factory Inventory Management System<br>Architecture Documentation</h1>
+
+        <div class="section overview">
+            <h2>System Overview</h2>
+            <p>Full-stack demo application for factory operations management with Vue 3 frontend, FastAPI backend, and JSON-based mock data storage.</p>
+
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <h3>Frontend</h3>
+                    <p>Vue 3 + Composition API<br>Vite Dev Server<br>Tailwind CSS</p>
+                </div>
+                <div class="tech-item">
+                    <h3>Backend</h3>
+                    <p>Python FastAPI<br>Pydantic Models<br>CORS Enabled</p>
+                </div>
+                <div class="tech-item">
+                    <h3>Data Layer</h3>
+                    <p>JSON Files<br>In-Memory Loading<br>Mock Data System</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>System Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="diagram-container">
+                    <div class="layer">
+                        <div class="component frontend interactive" onclick="showDetails('user')">👤 User Interface</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 80px;"></div>
+
+                    <div class="layer">
+                        <div class="component frontend interactive" onclick="showDetails('vue')">🖼️ Vue 3 Views</div>
+                        <div class="component frontend interactive" onclick="showDetails('components')">🧩 Components</div>
+                        <div class="component frontend interactive" onclick="showDetails('composables')">⚡ Composables</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 160px;"></div>
+
+                    <div class="layer">
+                        <div class="component frontend interactive" onclick="showDetails('api')">🌐 API Client</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 240px;"></div>
+
+                    <div class="layer">
+                        <div class="component backend interactive" onclick="showDetails('fastapi')">🚀 FastAPI Server</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 320px;"></div>
+
+                    <div class="layer">
+                        <div class="component backend interactive" onclick="showDetails('pydantic')">📝 Pydantic Models</div>
+                        <div class="component backend interactive" onclick="showDetails('filters')">🔍 Filter Functions</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 400px;"></div>
+
+                    <div class="layer">
+                        <div class="component data interactive" onclick="showDetails('mockdata')">📂 Mock Data Loader</div>
+                    </div>
+                    <div class="arrow" style="height: 40px; top: 480px;"></div>
+
+                    <div class="layer">
+                        <div class="component data interactive" onclick="showDetails('json')">📄 JSON Data Files</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="details" class="highlight" style="display: none;">
+                <h3 id="details-title">Component Details</h3>
+                <p id="details-content">Click on any component above to see details.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Project Statistics</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="number">13</div>
+                    <div class="label">API Endpoints</div>
+                </div>
+                <div class="stat">
+                    <div class="number">6</div>
+                    <div class="label">Main Views</div>
+                </div>
+                <div class="stat">
+                    <div class="number">7</div>
+                    <div class="label">Data Sources</div>
+                </div>
+                <div class="stat">
+                    <div class="number">4</div>
+                    <div class="label">Filter Types</div>
+                </div>
+                <div class="stat">
+                    <div class="number">2</div>
+                    <div class="label">Servers</div>
+                </div>
+                <div class="stat">
+                    <div class="number">5</div>
+                    <div class="label">Pydantic Models</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Data Flow Architecture</h2>
+            <div class="data-flow">
+                <div class="flow-step">
+                    <strong>1. User Interaction</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>User selects filters in FilterBar component</span>
+                </div>
+                <div class="flow-step">
+                    <strong>2. State Update</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>useFilters() composable updates reactive state</span>
+                </div>
+                <div class="flow-step">
+                    <strong>3. API Call</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>Vue component calls api.js method with filters</span>
+                </div>
+                <div class="flow-step">
+                    <strong>4. HTTP Request</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>Axios sends GET request with query parameters</span>
+                </div>
+                <div class="flow-step">
+                    <strong>5. FastAPI Processing</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>apply_filters() and filter_by_month() process data</span>
+                </div>
+                <div class="flow-step">
+                    <strong>6. Data Validation</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>Pydantic models validate and serialize response</span>
+                </div>
+                <div class="flow-step">
+                    <strong>7. Vue Update</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>Reactive refs update, computed properties recalculate</span>
+                </div>
+                <div class="flow-step">
+                    <strong>8. UI Re-render</strong>
+                    <span class="flow-arrow">→</span>
+                    <span>Template updates with new data automatically</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>File Structure</h2>
+            <div class="file-tree">
+<pre>📁 ccw-inventory-management/
+├── 📁 <span class="folder">client/</span>                    # Vue 3 Frontend
+│   ├── 📁 <span class="folder">src/</span>
+│   │   ├── 📁 <span class="folder">views/</span>              # Page Components
+│   │   │   ├── <span class="important">Dashboard.vue</span>     # Main dashboard
+│   │   │   ├── <span class="important">Inventory.vue</span>     # Inventory management
+│   │   │   ├── <span class="important">Orders.vue</span>        # Order tracking
+│   │   │   ├── <span class="important">Demand.vue</span>        # Demand forecasting
+│   │   │   ├── <span class="important">Spending.vue</span>      # Analytics
+│   │   │   └── <span class="important">Reports.vue</span>       # Reports
+│   │   ├── 📁 <span class="folder">components/</span>         # Reusable Components
+│   │   │   ├── <span class="file">FilterBar.vue</span>       # Global filters
+│   │   │   └── <span class="file">[Various]Modal.vue</span>  # Detail modals
+│   │   ├── 📁 <span class="folder">composables/</span>        # Vue Composition API
+│   │   │   ├── <span class="important">useFilters.js</span>    # Filter state management
+│   │   │   ├── <span class="file">useAuth.js</span>         # Authentication
+│   │   │   └── <span class="file">useI18n.js</span>         # Internationalization
+│   │   ├── <span class="important">api.js</span>              # Axios API client
+│   │   ├── <span class="important">main.js</span>             # Vue app entry + routing
+│   │   └── <span class="important">App.vue</span>             # Root component
+│   ├── <span class="file">package.json</span>             # Dependencies
+│   └── <span class="file">vite.config.js</span>           # Vite configuration
+├── 📁 <span class="folder">server/</span>                   # FastAPI Backend
+│   ├── 📁 <span class="folder">data/</span>                 # JSON Data Files
+│   │   ├── <span class="important">inventory.json</span>       # Inventory items
+│   │   ├── <span class="important">orders.json</span>          # Order records
+│   │   ├── <span class="important">demand_forecasts.json</span> # Forecasting data
+│   │   ├── <span class="important">backlog_items.json</span>   # Backlog tracking
+│   │   ├── <span class="file">spending.json</span>        # Spending data
+│   │   ├── <span class="file">transactions.json</span>    # Transaction history
+│   │   └── <span class="file">purchase_orders.json</span> # Purchase orders
+│   ├── <span class="important">main.py</span>               # FastAPI app + endpoints
+│   ├── <span class="important">mock_data.py</span>          # JSON data loader
+│   └── <span class="file">pyproject.toml</span>         # Python dependencies
+└── <span class="important">CLAUDE.md</span>                # Architecture guidelines</pre>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>API Endpoints</h2>
+            <table class="api-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Method</th>
+                        <th>Filters</th>
+                        <th>Purpose</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/inventory</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>warehouse, category</td>
+                        <td>List all inventory items</td>
+                    </tr>
+                    <tr>
+                        <td>/api/inventory/{id}</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Get single inventory item</td>
+                    </tr>
+                    <tr>
+                        <td>/api/orders</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>warehouse, category, status, month</td>
+                        <td>List all orders</td>
+                    </tr>
+                    <tr>
+                        <td>/api/orders/{id}</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Get single order</td>
+                    </tr>
+                    <tr>
+                        <td>/api/demand</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Demand forecasts</td>
+                    </tr>
+                    <tr>
+                        <td>/api/backlog</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Backlog items with PO status</td>
+                    </tr>
+                    <tr>
+                        <td>/api/dashboard/summary</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>all 4 filters</td>
+                        <td>Dashboard KPI metrics</td>
+                    </tr>
+                    <tr>
+                        <td>/api/spending/summary</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Spending overview</td>
+                    </tr>
+                    <tr>
+                        <td>/api/spending/monthly</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Monthly spending breakdown</td>
+                    </tr>
+                    <tr>
+                        <td>/api/spending/categories</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Spending by category</td>
+                    </tr>
+                    <tr>
+                        <td>/api/spending/transactions</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Recent transactions</td>
+                    </tr>
+                    <tr>
+                        <td>/api/reports/quarterly</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Quarterly performance</td>
+                    </tr>
+                    <tr>
+                        <td>/api/reports/monthly-trends</td>
+                        <td><span class="method get">GET</span></td>
+                        <td>-</td>
+                        <td>Month-over-month trends</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>Filter System Architecture</h2>
+            <div class="filter-diagram">
+                <div class="filter-box active">
+                    <h3>🕐 Time Period</h3>
+                    <p>Monthly (2025-01) or<br>Quarterly (Q1-2025)</p>
+                </div>
+                <div class="filter-box active">
+                    <h3>🏢 Warehouse</h3>
+                    <p>Tokyo, Osaka, Nagoya<br>All locations</p>
+                </div>
+                <div class="filter-box active">
+                    <h3>📦 Category</h3>
+                    <p>Circuit Boards, Sensors<br>Actuators, Controllers</p>
+                </div>
+                <div class="filter-box active">
+                    <h3>📋 Order Status</h3>
+                    <p>Delivered, Shipped<br>Processing, Backordered</p>
+                </div>
+            </div>
+
+            <h3>Filter Implementation Flow</h3>
+            <div class="code-block">
+// Frontend: useFilters.js (Shared State)
+const selectedPeriod = ref('all')
+const selectedLocation = ref('all')
+const selectedCategory = ref('all')
+const selectedStatus = ref('all')
+
+// API Call with Filters
+const filters = getCurrentFilters()
+const data = await api.getOrders(filters)
+
+// Backend: Filter Processing (main.py)
+def apply_filters(items, warehouse, category, status):
+    if warehouse != 'all':
+        items = [item for item in items if item.get('warehouse') == warehouse]
+    if category != 'all':
+        items = [item for item in items if item.get('category').lower() == category.lower()]
+    return items
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key Architecture Patterns</h2>
+
+            <h3>📱 Frontend Patterns</h3>
+            <ul>
+                <li><strong>Composition API:</strong> All components use Vue 3 Composition API with setup() function</li>
+                <li><strong>Composables:</strong> Shared logic extracted into reusable composables (useFilters, useAuth, useI18n)</li>
+                <li><strong>Reactive State:</strong> Centralized filter state using reactive refs and computed properties</li>
+                <li><strong>Component Communication:</strong> Props down, events up pattern with global state for filters</li>
+            </ul>
+
+            <h3>🔙 Backend Patterns</h3>
+            <ul>
+                <li><strong>FastAPI:</strong> Modern async Python web framework with automatic API docs</li>
+                <li><strong>Pydantic Models:</strong> Type validation and serialization for all API responses</li>
+                <li><strong>In-Memory Data:</strong> JSON files loaded at startup for fast read operations</li>
+                <li><strong>Functional Filtering:</strong> Pure functions for data filtering with no side effects</li>
+            </ul>
+
+            <h3>📊 Data Patterns</h3>
+            <ul>
+                <li><strong>JSON Storage:</strong> 7 JSON files containing mock data for different entities</li>
+                <li><strong>No Database:</strong> Simplified demo approach with file-based storage</li>
+                <li><strong>Restart to Refresh:</strong> Data changes require server restart to reload from files</li>
+                <li><strong>In-Memory Processing:</strong> All filtering and aggregation happens in Python memory</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Development Workflow</h2>
+
+            <div class="highlight">
+                <h3>🚀 Getting Started</h3>
+                <p><strong>Backend:</strong> <code>cd server && uv run python main.py</code></p>
+                <p><strong>Frontend:</strong> <code>cd client && npm install && npm run dev</code></p>
+                <p><strong>Access:</strong> Frontend at http://localhost:3000, API docs at http://localhost:8001/docs</p>
+            </div>
+
+            <h3>🔄 Typical Development Flow</h3>
+            <ol>
+                <li>Start both servers (backend port 8001, frontend port 3000)</li>
+                <li>Make changes to Vue components or FastAPI endpoints</li>
+                <li>Hot reload automatically reflects changes (Vite + FastAPI auto-reload)</li>
+                <li>Test API endpoints using FastAPI docs interface</li>
+                <li>Update JSON data files and restart backend to see data changes</li>
+            </ol>
+
+            <h3>📁 Key Files to Modify</h3>
+            <ul>
+                <li><strong>Add Views:</strong> Create .vue files in <code>client/src/views/</code> and update router in <code>main.js</code></li>
+                <li><strong>Add API Endpoints:</strong> Add functions to <code>server/main.py</code> with Pydantic models</li>
+                <li><strong>Modify Data:</strong> Edit JSON files in <code>server/data/</code> and restart backend</li>
+                <li><strong>Add Filters:</strong> Update <code>useFilters.js</code> composable and filter functions in <code>main.py</code></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const componentDetails = {
+            user: {
+                title: "User Interface Layer",
+                content: "Browser-based interface where users interact with the application. Handles user input, filter selections, and displays responsive data visualizations."
+            },
+            vue: {
+                title: "Vue 3 Views",
+                content: "6 main page components: Dashboard, Inventory, Orders, Demand, Spending, Reports. Each view handles specific business functionality and uses Composition API pattern."
+            },
+            components: {
+                title: "Reusable Components",
+                content: "Shared UI components including FilterBar for global filtering, various modal dialogs for detailed views, and utility components for charts and data display."
+            },
+            composables: {
+                title: "Vue Composables",
+                content: "Shared reactive state and logic: useFilters() for filter management, useAuth() for authentication state, useI18n() for internationalization support."
+            },
+            api: {
+                title: "API Client Layer",
+                content: "Axios-based HTTP client (api.js) that wraps all 13 backend endpoints. Constructs query parameters from filter objects and handles response processing."
+            },
+            fastapi: {
+                title: "FastAPI Server",
+                content: "Python web framework serving 13 REST endpoints on port 8001. Handles CORS, request validation, and business logic with automatic API documentation."
+            },
+            pydantic: {
+                title: "Pydantic Models",
+                content: "5 data models for type validation: InventoryItem, Order, DemandForecast, BacklogItem, PurchaseOrder. Ensures data integrity and API response consistency."
+            },
+            filters: {
+                title: "Filter Functions",
+                content: "Backend filtering logic: apply_filters() for warehouse/category/status filtering, filter_by_month() for temporal filtering supporting monthly and quarterly periods."
+            },
+            mockdata: {
+                title: "Mock Data Loader",
+                content: "mock_data.py loads 7 JSON files into memory at server startup. Provides fast in-memory data access for demo purposes without database complexity."
+            },
+            json: {
+                title: "JSON Data Files",
+                content: "7 data files in server/data/: inventory, orders, demand_forecasts, backlog_items, spending, transactions, purchase_orders. Contains sample factory data."
+            }
+        };
+
+        function showDetails(componentKey) {
+            const details = componentDetails[componentKey];
+            if (details) {
+                document.getElementById('details').style.display = 'block';
+                document.getElementById('details-title').textContent = details.title;
+                document.getElementById('details-content').textContent = details.content;
+
+                // Smooth scroll to details
+                document.getElementById('details').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Add some interactive behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects to tables
+            const tables = document.querySelectorAll('.api-table tr');
+            tables.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f3f4f6';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    restocking: '在庫補充',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -105,6 +106,8 @@ export default {
   orders: {
     title: '注文',
     description: '顧客注文の表示と管理',
+    customerOrders: '顧客注文',
+    purchaseOrders: '発注書',
     allOrders: 'すべての注文',
     totalOrders: '総注文数',
     totalRevenue: '総収益',
@@ -125,7 +128,12 @@ export default {
       totalValue: '合計金額',
       status: 'ステータス',
       expectedDelivery: '予定配達日',
-      actualDelivery: '実際の配達日'
+      actualDelivery: '実際の配達日',
+      poNumber: '発注番号',
+      supplier: '供給業者',
+      quantity: '数量',
+      unitCost: '単価',
+      createdDate: '作成日'
     }
   },
 
@@ -378,5 +386,78 @@ export default {
     'Premier Industries': 'プレミア工業',
     'Stellar Components Ltd': 'ステラコンポーネンツ',
     'Dynamic Systems Ltd': 'ダイナミックシステムズ'
+  },
+
+  // Restocking
+  restocking: {
+    title: '予算ベース在庫補充',
+    description: 'インテリジェントな推奨を使用して予算制約内で在庫補充を最適化',
+    budgetPlanning: '予算計画',
+    totalBudget: '総予算',
+    enterBudget: '予算額を入力',
+    calculate: '推奨計算',
+    calculating: '計算中',
+    calculatingRecommendations: '在庫を分析し最適な推奨を計算中...',
+    recommendations: '推奨在庫補充アイテム',
+    allocated: '割当済',
+    remaining: '残額',
+    noItemsNeeded: '全アイテム十分在庫',
+    allItemsStocked: '現在すべての在庫アイテムが再注文ポイントを上回っています。この時点で補充は不要です。',
+    partial: '部分',
+    approvalSummary: '承認概要',
+    itemsToOrder: '注文アイテム',
+    totalCost: '総コスト',
+    approve: '承認・発注書作成',
+    approving: '注文作成中',
+    removeItem: 'アイテム削除',
+    table: {
+      item: 'アイテム',
+      currentStock: '現在在庫',
+      recommended: '推奨',
+      allocated: '割当',
+      cost: 'コスト',
+      priority: '優先度',
+      actions: '操作'
+    },
+    trends: {
+      increasing: '上昇',
+      stable: '安定',
+      decreasing: '下降'
+    },
+    priority: {
+      high: '高',
+      medium: '中',
+      low: '低'
+    },
+    errors: {
+      negativeBudget: '予算はマイナスにできません',
+      zeroBudget: '予算はゼロより大きくする必要があります',
+      invalidBudget: '有効な予算額を入力してください',
+      calculationFailed: '推奨の計算に失敗しました。再試行してください。',
+      approvalFailed: '発注書の作成に失敗しました。再試行してください。'
+    },
+    success: {
+      title: '在庫補充注文が正常に作成されました',
+      message: '{count}件の発注書が作成されました',
+      totalCost: '総投資',
+      ordersCreated: '作成された発注書',
+      expectedDelivery: '予定配送',
+      nextSteps: '次のステップ',
+      step1: '注文セクションで発注書ステータスをモニター',
+      step2: '配送スケジュールを追跡し受領時に在庫更新',
+      step3: '補充効果を確認し必要に応じて再注文ポイント調整',
+      viewOrders: '注文表示'
+    }
+  },
+
+  // Purchase Order
+  purchaseOrder: {
+    status: {
+      pending: '保留中',
+      confirmed: '確認済',
+      shipped: '発送済',
+      delivered: '配送済',
+      cancelled: 'キャンセル'
+    }
   }
 }

@@ -8,7 +8,26 @@
     <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else>
-      <div class="stats-grid">
+      <!-- Order Type Tabs -->
+      <div class="order-tabs">
+        <button
+          @click="activeTab = 'customer'"
+          :class="{ active: activeTab === 'customer' }"
+          class="tab-button"
+        >
+          {{ t('orders.customerOrders') }}
+        </button>
+        <button
+          @click="activeTab = 'purchase'"
+          :class="{ active: activeTab === 'purchase' }"
+          class="tab-button"
+        >
+          {{ t('orders.purchaseOrders') }}
+        </button>
+      </div>
+
+      <!-- Customer Orders Stats -->
+      <div v-if="activeTab === 'customer'" class="stats-grid">
         <div class="stat-card success">
           <div class="stat-label">{{ t('status.delivered') }}</div>
           <div class="stat-value">{{ getOrdersByStatus('Delivered').length }}</div>
@@ -74,6 +93,47 @@
           </table>
         </div>
       </div>
+
+      <!-- Purchase Orders Tab Content -->
+      <div v-if="activeTab === 'purchase'" class="card">
+        <div class="card-header">
+          <h3 class="card-title">{{ t('orders.purchaseOrders') }} ({{ purchaseOrders.length }})</h3>
+        </div>
+        <div class="table-container">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th class="col-order-number">{{ t('orders.table.poNumber') }}</th>
+                <th class="col-supplier">{{ t('orders.table.supplier') }}</th>
+                <th class="col-quantity">{{ t('orders.table.quantity') }}</th>
+                <th class="col-cost">{{ t('orders.table.unitCost') }}</th>
+                <th class="col-status">{{ t('orders.table.status') }}</th>
+                <th class="col-date">{{ t('orders.table.createdDate') }}</th>
+                <th class="col-date">{{ t('orders.table.expectedDelivery') }}</th>
+                <th class="col-value">{{ t('orders.table.totalValue') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="po in purchaseOrders" :key="po.id">
+                <td class="col-order-number"><strong>{{ po.id }}</strong></td>
+                <td class="col-supplier">{{ po.supplier_name }}</td>
+                <td class="col-quantity">{{ po.quantity }}</td>
+                <td class="col-cost">{{ currencySymbol }}{{ po.unit_cost.toFixed(2) }}</td>
+                <td class="col-status">
+                  <span :class="getPOStatusClass(po.status)">
+                    {{ t(`purchaseOrder.status.${po.status}`) }}
+                  </span>
+                </td>
+                <td class="col-date">{{ formatDate(po.created_date) }}</td>
+                <td class="col-date">{{ formatDate(po.expected_delivery_date) }}</td>
+                <td class="col-value">
+                  <strong>{{ currencySymbol }}{{ (po.quantity * po.unit_cost).toLocaleString() }}</strong>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -95,6 +155,8 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const activeTab = ref('customer')
+    const purchaseOrders = ref([])
 
     // Use shared filters
     const {
@@ -124,9 +186,41 @@ export default {
       }
     }
 
-    // Watch for filter changes and reload data
+    const loadPurchaseOrders = async () => {
+      try {
+        loading.value = true
+        const fetchedPurchaseOrders = await api.getPurchaseOrders()
+
+        // Sort purchase orders by created_date (newest first)
+        purchaseOrders.value = fetchedPurchaseOrders.sort((a, b) => {
+          const dateA = new Date(a.created_date)
+          const dateB = new Date(b.created_date)
+          return dateB - dateA
+        })
+      } catch (err) {
+        error.value = 'Failed to load purchase orders: ' + err.message
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const loadData = async () => {
+      if (activeTab.value === 'customer') {
+        await loadOrders()
+      } else {
+        await loadPurchaseOrders()
+      }
+    }
+
+    // Watch for filter changes and tab changes
     watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
-      loadOrders()
+      if (activeTab.value === 'customer') {
+        loadOrders()
+      }
+    })
+
+    watch(activeTab, () => {
+      loadData()
     })
 
     const getOrdersByStatus = (status) => {
@@ -143,6 +237,17 @@ export default {
       return statusMap[status] || 'info'
     }
 
+    const getPOStatusClass = (status) => {
+      const statusMap = {
+        'pending': 'warning',
+        'confirmed': 'info',
+        'shipped': 'info',
+        'delivered': 'success',
+        'cancelled': 'danger'
+      }
+      return statusMap[status.toLowerCase()] || 'info'
+    }
+
     const formatDate = (dateString) => {
       const { currentLocale } = useI18n()
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
@@ -153,15 +258,18 @@ export default {
       })
     }
 
-    onMounted(loadOrders)
+    onMounted(loadData)
 
     return {
       t,
       loading,
       error,
       orders,
+      activeTab,
+      purchaseOrders,
       getOrdersByStatus,
       getOrderStatusClass,
+      getPOStatusClass,
       formatDate,
       currencySymbol,
       translateProductName,
@@ -172,6 +280,48 @@ export default {
 </script>
 
 <style scoped>
+/* Tab styles */
+.order-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #6b7280;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.tab-button.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* Additional column widths for purchase orders */
+.col-supplier {
+  width: 150px;
+}
+
+.col-quantity {
+  width: 100px;
+}
+
+.col-cost {
+  width: 120px;
+}
+
 /* Fixed table layout to prevent column shifting */
 .orders-table {
   table-layout: fixed;

@@ -28,17 +28,23 @@ Use the Task tool with these specialized subagents for appropriate tasks:
 - **Backend**: Python FastAPI (port 8001)
 - **Data**: JSON files in `server/data/` loaded via `server/mock_data.py`
 
-## Quick Start
+## Development Server Commands
 
+**Start Backend (FastAPI on port 8001):**
 ```bash
-# Backend
 cd server
 uv run python main.py
+```
 
-# Frontend
+**Start Frontend (Vite on port 3000):**
+```bash
 cd client
 npm install && npm run dev
 ```
+
+**Quick Start (both servers):**
+- Backend: http://localhost:8001 (API docs: http://localhost:8001/docs)
+- Frontend: http://localhost:3000
 
 ## Key Patterns
 
